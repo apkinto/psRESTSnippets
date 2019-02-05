@@ -50,9 +50,10 @@ def getRest( url, log ):
 	data = r.content
 	output = json.loads(data)
 	end = getTime()
-	log.info('\t\t%s sec' % (end-start))
+	time = end - start
+	#log.info('\t\t%s sec' % ( time ))
 	
-	return output
+	return output, time
 		
 def getResources( filename ):
 	resourceNames = []
@@ -65,7 +66,7 @@ def getPsPlanId ( url, rootResource, log ):
 	#log = setLogging()
 	psPlans = []
 	psPlanUrl = url + '/' + rootResource 
-	psPlanOutput = getRest( psPlanUrl, log )
+	psPlanOutput, t = getRest( psPlanUrl, log )
 	for p in psPlanOutput['items']:
 		psPlans.append( p['PlanId'] )
 	
@@ -86,3 +87,7 @@ def writeCsv ( list, filename, outDir ):
 			w.writerow(i)
 		f.close()
 
+def getUrl ( *n ):
+	newUrl = '/'.join( n )
+	
+	return newUrl

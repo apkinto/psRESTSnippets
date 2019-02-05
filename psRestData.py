@@ -13,6 +13,7 @@ from psRestUtilities import getRest
 from psRestUtilities import getResources
 from psRestUtilities import getPsPlanId
 from psRestUtilities import writeCsv
+from psRestUtilities import getUrl
 
 
 
@@ -35,13 +36,12 @@ if __name__ == "__main__":
 	for plan in psPlanIdList:
 		log.info( 'PlanId: %s ' % ( plan ) )
 		for r in resources:
-			params = [ str(plan), 'child', r ]
-			toUrl = url + '/' + rootResource + '/' + '/'.join( params )
-			log.info('\t%s ' % ( r ) )
-			restOutput = getRest ( toUrl, log )
+			toUrl = getUrl ( url, rootResource, str( plan ), 'child', r )
+			#log.info('\t%s ' % ( r ) )
+			restOutput, t = getRest ( toUrl, log )
 			filename = str( plan ) + '.' + r
 			if restOutput[ 'items' ]:
-				log.info('\t\t%s records' % ( len( restOutput[ 'items' ] ) ))
+				log.info('\t\t%5s Records \t%s sec \t%s' % (( len( restOutput[ 'items' ] ) ), t, r))
 				writeCsv ( restOutput[ 'items' ], filename, outDir )
 
 	
