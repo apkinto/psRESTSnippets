@@ -86,6 +86,3 @@ def writeCsv ( list, filename, outDir ):
 			w.writerow(i)
 		f.close()
 
-
-if __name__ == "__main__":
-
