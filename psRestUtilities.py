@@ -47,13 +47,14 @@ def getRest( url, log ):
 	data = ''
 	start = getTime()
 	r = requests.get( url, data=data )
+	#print ( r.status_code )
 	data = r.content
 	output = json.loads(data)
 	end = getTime()
 	time = end - start
 	#log.info('\t\t%s sec' % ( time ))
 	
-	return output, time
+	return output, time, r.status_code
 		
 def getResources( filename ):
 	resourceNames = []
@@ -66,11 +67,11 @@ def getPsPlanId ( url, rootResource, log ):
 	#log = setLogging()
 	psPlans = []
 	psPlanUrl = url + '/' + rootResource 
-	psPlanOutput, t = getRest( psPlanUrl, log )
+	psPlanOutput, t, status = getRest( psPlanUrl, log )
 	for p in psPlanOutput['items']:
 		psPlans.append( p['PlanId'] )
 	
-	log.info('Fetching for following Plans (PlanID): %s ' % ( psPlans ) )
+	log.info('--> Fetching Data for following Plans (PlanID): %s\n' % ( psPlans ) )
 	return psPlans
 	
 def writeCsv ( list, filename, outDir ):

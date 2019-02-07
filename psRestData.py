@@ -30,19 +30,26 @@ if __name__ == "__main__":
 	resFile = os.path.join(inputDir, resourceList)	
 	resources = getResources( resFile )
 	
+	log.info('REST Server: %s' % ( url ))	
 	psPlanIdList = getPsPlanId( url, rootResource, log )
-	log.info('REST Server: %s\n' % ( url ))
+
 	
 	for plan in psPlanIdList:
 		log.info( 'PlanId: %s ' % ( plan ) )
+		planUrl = getUrl ( url, rootResource, str( plan ) )
+		planDetails, t, status = getRest ( planUrl, log )
+		filename = str( plan ) + '.' + rootResource
+		writeCsv ( [planDetails], filename, outDir )
+		log.info('\t\tStatusCode: %s\t%5s Records \t%s sec \t%s' % (status, ( len( [ planDetails ] )), t, rootResource))
 		for r in resources:
 			toUrl = getUrl ( url, rootResource, str( plan ), 'child', r )
-			#log.info('\t%s ' % ( r ) )
-			restOutput, t = getRest ( toUrl, log )
+			restOutput, t, status = getRest ( toUrl, log )
 			filename = str( plan ) + '.' + r
 			if restOutput[ 'items' ]:
-				log.info('\t\t%5s Records \t%s sec \t%s' % (( len( restOutput[ 'items' ] ) ), t, r))
+				log.info('\t\tStatusCode: %s\t%5s Records \t%s sec \t%s' % (status, ( len( restOutput[ 'items' ] )), t, r))
 				writeCsv ( restOutput[ 'items' ], filename, outDir )
+			else:
+				log.info('\t\tStatusCode: %s\t%5s Records \t%s sec \t%s' % ( status, '-', t, r ) )
 
 	
 	
