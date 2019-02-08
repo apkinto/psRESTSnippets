@@ -30,8 +30,10 @@ if __name__ == "__main__":
 	resFile = os.path.join(inputDir, resourceList)	
 	resources = getResources( resFile )
 	
-	log.info('REST Server: %s' % ( url ))	
-	psPlanIdList = getPsPlanId( url, rootResource, log )
+	log.info('REST Server: %s' % ( url ))
+	psPlanUrl = getUrl( url, rootResource)
+	psPlanOutput, t, status = getRest( psPlanUrl, log )
+	psPlanIdList = getPsPlanId( psPlanOutput, log )
 
 	
 	for plan in psPlanIdList:

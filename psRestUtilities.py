@@ -59,15 +59,13 @@ def getRest( url, log ):
 def getResources( filename ):
 	resourceNames = []
 	with open(filename, 'r', newline = '') as f:  
-		for line in f:
+		for line in f:	
 			resourceNames.append(line.rstrip())
 	return resourceNames
 
-def getPsPlanId ( url, rootResource, log ):
+def getPsPlanId ( psPlanOutput, log ):
 	#log = setLogging()
 	psPlans = []
-	psPlanUrl = url + '/' + rootResource 
-	psPlanOutput, t, status = getRest( psPlanUrl, log )
 	for p in psPlanOutput['items']:
 		psPlans.append( p['PlanId'] )
 	
@@ -92,3 +90,12 @@ def getUrl ( *n ):
 	newUrl = '/'.join( n )
 	
 	return newUrl
+
+def scmAuth ( user, password ):
+	r = requests.Session()
+	r.auth = ( user, password )
+	r.headers = {'Content-type': 'application/json'}
+	payload = ''
+	
+	return r, r.auth, r.headers, payload
+	
