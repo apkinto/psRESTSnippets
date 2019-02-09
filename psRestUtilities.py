@@ -41,13 +41,11 @@ def setLogging():
 	logger.addHandler(ch)
 	return logger
 		
-def getRest( url, log ):
+def getRest( url, session, payload, requestHeader, authorization, querystring, log ):
 	#log = setLogging()
-	#newUrl = urllib.parse.urljoin( url, 'productionSchedulingPlans/describe' )
-	data = ''
+	payload = ''
 	start = getTime()
-	r = requests.get( url, data=data )
-	#print ( r.status_code )
+	r = session.get( url, data=payload, headers=requestHeader, params=querystring, auth=authorization )
 	data = r.content
 	output = json.loads(data)
 	end = getTime()
@@ -90,6 +88,11 @@ def getUrl ( *n ):
 	newUrl = '/'.join( n )
 	
 	return newUrl
+	
+def getJsonItems ( jsonOutput ):
+	objectList = jsonOutput['items']
+	
+	return objectList
 
 def scmAuth ( user, password ):
 	r = requests.Session()
