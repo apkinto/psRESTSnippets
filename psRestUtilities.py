@@ -41,35 +41,42 @@ def setLogging():
 	logger.addHandler(ch)
 	return logger
 		
-def getRest( url, log ):
+def getRest( url, session, payload, requestHeader, authorization, querystring, log ):
 	#log = setLogging()
-	#newUrl = urllib.parse.urljoin( url, 'productionSchedulingPlans/describe' )
-	data = ''
+	payload = ''
 	start = getTime()
-	r = requests.get( url, data=data )
-	data = r.content
-	output = json.loads(data)
-	end = getTime()
-	log.info('\t\t%s sec' % (end-start))
+	try:
+		r = session.get( url, data=payload, headers=requestHeader, params=querystring, auth=authorization )
+		data = r.content
+		output = json.loads(data)
+		end = getTime()
+		time = end - start
+	except:
+		output = {'items' : None}
+		r.status_code
+		end = getTime()
+		time = end - start
+		log.info('   **ERROR**')
 	
-	return output
+	return output, time, r.status_code
+
 		
 def getResources( filename ):
 	resourceNames = []
 	with open(filename, 'r', newline = '') as f:  
-		for line in f:
+		for line in f:	
 			resourceNames.append(line.rstrip())
 	return resourceNames
 
-def getPsPlanId ( url, rootResource, log ):
-	#log = setLogging()
+def getPsPlanId ( psPlanOutput, log ):
 	psPlans = []
-	psPlanUrl = url + '/' + rootResource 
-	psPlanOutput = getRest( psPlanUrl, log )
 	for p in psPlanOutput['items']:
-		psPlans.append( p['PlanId'] )
-	
-	log.info('Fetching for following Plans (PlanID): %s ' % ( psPlans ) )
+		psPlans.append( { 
+							'PlanId' : p['PlanId'],
+							'PlaName': p['PlanName'] 
+						} 
+						)
+	log.info('--> Fetching Data for following Plans (PlanID): %s\n' % ( psPlans ) )
 	return psPlans
 	
 def writeCsv ( list, filename, outDir ):
@@ -86,3 +93,22 @@ def writeCsv ( list, filename, outDir ):
 			w.writerow(i)
 		f.close()
 
+def getUrl ( *n ):
+	newUrl = '/'.join( n )
+	
+	return newUrl
+	
+def getJsonItems ( jsonOutput ):
+	objectList = jsonOutput['items']
+	
+	return objectList
+
+def scmAuth ( user, password ):
+	r = requests.Session()
+	r.auth = ( user, password )
+	#r.headers = {'Content-type': 'application/json', 'REST-Framework-Version': '1'}
+	r.headers={	'Cache-Control': 'no-cache, no-store, must-revalidate','Content-Type': 'application/json', 'REST-Framework-Version': '1', 'Connection': 'close', 	 }
+	payload = ''
+	
+	return r, r.auth, r.headers, payload
+	
