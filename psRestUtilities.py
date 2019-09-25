@@ -45,14 +45,21 @@ def getRest( url, session, payload, requestHeader, authorization, querystring, l
 	#log = setLogging()
 	payload = ''
 	start = getTime()
-	r = session.get( url, data=payload, headers=requestHeader, params=querystring, auth=authorization )
-	data = r.content
-	output = json.loads(data)
-	end = getTime()
-	time = end - start
-	#log.info('\t\t%s sec' % ( time ))
+	try:
+		r = session.get( url, data=payload, headers=requestHeader, params=querystring, auth=authorization )
+		data = r.content
+		output = json.loads(data)
+		end = getTime()
+		time = end - start
+	except:
+		output = {'items' : None}
+		r.status_code
+		end = getTime()
+		time = end - start
+		log.info('   **ERROR**')
 	
 	return output, time, r.status_code
+
 		
 def getResources( filename ):
 	resourceNames = []
@@ -62,11 +69,13 @@ def getResources( filename ):
 	return resourceNames
 
 def getPsPlanId ( psPlanOutput, log ):
-	#log = setLogging()
 	psPlans = []
 	for p in psPlanOutput['items']:
-		psPlans.append( p['PlanId'] )
-	
+		psPlans.append( { 
+							'PlanId' : p['PlanId'],
+							'PlaName': p['PlanName'] 
+						} 
+						)
 	log.info('--> Fetching Data for following Plans (PlanID): %s\n' % ( psPlans ) )
 	return psPlans
 	
@@ -97,8 +106,10 @@ def getJsonItems ( jsonOutput ):
 def scmAuth ( user, password ):
 	r = requests.Session()
 	r.auth = ( user, password )
-	r.headers = {'Content-type': 'application/json'}
+	#r.headers = {'Content-type': 'application/json', 'REST-Framework-Version': '1'}
+	r.headers={	'Cache-Control': 'no-cache, no-store, must-revalidate','Content-Type': 'application/json', 'REST-Framework-Version': '1', 'Connection': 'close', 	 }
 	payload = ''
 	
 	return r, r.auth, r.headers, payload
+
 	

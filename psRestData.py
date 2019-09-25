@@ -1,20 +1,5 @@
-import json
-import requests
-import datetime
-import xml.etree.ElementTree as ET
 import sys, os
-import urllib.parse
-import csv
-import logging
-from psRestUtilities import getTime
-from psRestUtilities import setLogging
-from psRestUtilities import setVariables
-from psRestUtilities import getRest
-from psRestUtilities import getResources
-from psRestUtilities import getPsPlanId
-from psRestUtilities import writeCsv
-from psRestUtilities import getUrl
-from psRestUtilities import scmAuth
+from psRestUtilities import *
 
 
 if __name__ == "__main__":
@@ -29,20 +14,22 @@ if __name__ == "__main__":
 	planId = variables['planId']
 	resFile = os.path.join(inputDir, resourceList)	
 	resources = getResources( resFile )
-	username = ''
-	password = ''
+	username = variables['user']
+	password = variables['password']
 	
 	session, authorization, requestHeader, payload = scmAuth ( username, password )
-	querystring = { "limit": 30 }
-	#querystring =''
+	querystring = { 
+					"limit": 30 
+					}
 	
 	log.info('REST Server: %s' % ( url ))
 	psPlanUrl = getUrl( url, rootResource)
 	psPlanOutput, t, status = getRest( psPlanUrl, session, payload, requestHeader, authorization, querystring, log )
 	psPlanIdList = getPsPlanId( psPlanOutput, log )
 
-	for plan in psPlanIdList:
-		log.info( 'PlanId: %s ' % ( plan ) )
+	for p in psPlanIdList:
+		plan = p['PlanId']
+		log.info( 'Plan: %s' % ( p.values() ) )
 		planUrl = getUrl ( url, rootResource, str( plan ) )
 		planDetails, t, status = getRest( planUrl, session, payload, requestHeader, authorization, None, log )
 		filename = str( plan ) + '.' + rootResource
@@ -50,6 +37,7 @@ if __name__ == "__main__":
 		log.info('\t\tStatusCode: %s\t%5s Records \t%s sec \t%s' % (status, ( len( [ planDetails ] )), t, rootResource))
 		for r in resources:
 			toUrl = getUrl ( url, rootResource, str( plan ), 'child', r )
+			#print ( toUrl )
 			restOutput, t, status = getRest ( toUrl, session, payload, requestHeader, authorization, querystring, log )
 			filename = str( plan ) + '.' + r
 			if restOutput[ 'items' ]:
@@ -57,6 +45,8 @@ if __name__ == "__main__":
 				writeCsv ( restOutput[ 'items' ], filename, outDir )
 			else:
 				log.info('\t\tStatusCode: %s\t%5s Records \t%s sec \t%s' % ( status, '-', t, r ) )
+		log.info('\n')
 
 	
 	
+
