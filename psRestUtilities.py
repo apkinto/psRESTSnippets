@@ -111,4 +111,5 @@ def scmAuth ( user, password ):
 	payload = ''
 	
 	return r, r.auth, r.headers, payload
+
 	
