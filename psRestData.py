@@ -1,31 +1,15 @@
 import sys, os
 from psRestUtilities import *
 
-
-if __name__ == "__main__":
+def getData ( recordLimit ):
 	
-	log = setLogging()
-	variables = setVariables('psRest.xml')
-	outDir = variables['psOutputDirectory']
-	inputDir = variables['psInputDirectory']
-	resourceList = variables['resourceList']
-	rootResource = variables['rootResource']
-	url = variables['url']
-	planId = variables['planId']
-	resFile = os.path.join(inputDir, resourceList)	
-	resources = getResources( resFile )
-	username = variables['user']
-	password = variables['password']
-	
-	session, authorization, requestHeader, payload = scmAuth ( username, password )
 	querystring = { 
-					"limit": 30 
+					"limit": recordLimit 
 					}
 	
-	log.info('REST Server: %s' % ( url ))
-	psPlanUrl = getUrl( url, rootResource)
 	psPlanOutput, t, status = getRest( psPlanUrl, session, payload, requestHeader, authorization, querystring, log )
-	psPlanIdList = getPsPlanId( psPlanOutput, log )
+
+	psPlanIdList = getPsPlanId( psPlanOutput, log )	
 
 	for p in psPlanIdList:
 		plan = p['PlanId']
@@ -47,6 +31,29 @@ if __name__ == "__main__":
 				log.info('\t\tStatusCode: %s\t%5s Records \t%s sec \t%s' % ( status, '-', t, r ) )
 		log.info('\n')
 
-	
-	
 
+if __name__ == "__main__":
+	
+	log = setLogging()
+	variables = setVariables('psRest.xml')
+	outDir = variables['psOutputDirectory']
+	inputDir = variables['psInputDirectory']
+	resourceList = variables['resourceList']
+	rootResource = variables['rootResource']
+	recordLimit = variables['recordLimit']
+	url = variables['url']
+	planId = variables['planId']
+	resFile = os.path.join(inputDir, resourceList)
+	resources = getResources( resFile )
+	username = variables['user']
+	password = variables['password']
+	
+	session, authorization, requestHeader, payload = scmAuth ( username, password )
+	
+	log.info('REST Server: %s' % ( url ))
+	psPlanUrl = getUrl( url, rootResource)
+	
+	getData( recordLimit )
+
+
+	

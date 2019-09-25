@@ -60,6 +60,22 @@ def getRest( url, session, payload, requestHeader, authorization, querystring, l
 	
 	return output, time, r.status_code
 
+def postRest( url, session, body, requestHeader, authorization, log ):
+	#log = setLogging()
+	start = getTime()
+	try:
+		r = session.post( url, json=body, headers=requestHeader, auth=authorization )
+		#print ( r.status_code, r.text )
+		end = getTime()
+		time = end - start
+	except:
+		r.status_code
+		end = getTime()
+		time = end - start
+		log.info('   **ERROR**')
+	
+	return time, r.status_code, r.text
+
 		
 def getResources( filename ):
 	resourceNames = []
@@ -111,5 +127,4 @@ def scmAuth ( user, password ):
 	payload = ''
 	
 	return r, r.auth, r.headers, payload
-
 	
