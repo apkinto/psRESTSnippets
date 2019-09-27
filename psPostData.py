@@ -1,4 +1,5 @@
 import sys, os
+import json
 from psRestUtilities import *
 
 def postData ( objectList, url ):
@@ -34,7 +35,7 @@ if __name__ == "__main__":
 	
 	'''	get Schedule Organizations and create code/id xref	'''
 	psOrganizations, t, status = getRest ( psOrgUrl, session, payload, requestHeader, authorization, recordLimit, log )
-	orgXref = idCode ( psOrganizations, 'Organization', log )
+	orgXref = idCode ( psOrganizations, 'Organization', 'Code', log )
 	#print ( orgXref )
 	#for org in orgXref.items():
 	#	print ( org )
@@ -44,7 +45,11 @@ if __name__ == "__main__":
 	psPlanIdList = getPsPlanId( psPlanOutput, log )	
 	#print ( psPlanIdList ) 
 	
-	'''  Read data from excel worksheet '''
+	'''
+		Create Production Scheduling Plans
+	'''
+	
+	'''  Read data from Excel worksheet '''
 	plans = readExcel( excelData, 'Plans' )
 	
 	'''	For each plan, insert OrgId	'''
@@ -53,6 +58,37 @@ if __name__ == "__main__":
 		plan['OrganizationId'] = orgXref[ plan['OrganizationCode'] ]
 	#print ( plans )
 	
-	postData( plans, psPlanUrl )
+	#postData( plans, psPlanUrl )
+	
+	''' 
+		Update Attribute Colors
+	'''
+	
+	attributeValues = readExcel( excelData, 'AttributeValue' )
+	#print ( '===', attributeValues )
+	for av in attributeValues:
+		''' For each row in the Excel, find the id's '''
+		av['OrganizationId'] = orgXref[ av['OrganizationCode'] ]
+		''' Make attribute call by organization to get attributeId '''
+		attrUrl = getUrl( psOrgUrl, str(av['OrganizationId']), 'child/attributes' )
+		psOrgAttr, t, status = getRest( attrUrl, session, payload, requestHeader, authorization, recordLimit, log )
+		for attr in psOrgAttr['items']:
+			''' Process only SegmentCodes defined in the spreadsheet and get the AttributeId '''
+			if av['SegmentCode'] == attr['SegmentCode']:
+				print ("---", attr['SegmentCode'], attr['AttributeId'])
+				''' Get the system generated Key for Attribute '''
+				for attrLink in attr['links']:
+					if ( attrLink['rel'] == 'self' ):
+						attrKey = parseUrl( attrLink['href'] )
+						#print (attrKey)
+						attrValUrl = getUrl(attrUrl, attrKey, 'child/attributeValues')
+						psOrgAttrVal, t, status = getRest( attrValUrl, session, payload, requestHeader, authorization, recordLimit, log )
+						for attrVal in psOrgAttrVal['items']:
+							if attrVal['AttributeValueCode'] == av['AttributeValueCode']:
+							#print (attrVal)
+								print (av['OrganizationId'], attr['AttributeId'], attrVal['AttributeValueId'], av['Color'])
+						
+		#print ( psOrgAttr )
+		
 	
 	
