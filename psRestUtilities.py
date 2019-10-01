@@ -7,6 +7,7 @@ import urllib.parse
 import csv
 import logging
 from openpyxl import load_workbook
+from urllib.parse import urlsplit
 
 
 
@@ -43,14 +44,13 @@ def setLogging():
 	logger.addHandler(ch)
 	return logger
 		
-
 def getRest( url, session, payload, requestHeader, authorization, recordLimit, log ):
 	#log = setLogging()
 	payload = ''
 	querystring = { 
 					"limit": recordLimit 
 					}
-
+	
 	start = getTime()
 	try:
 		r = session.get( url, data=payload, headers=requestHeader, params=querystring, auth=authorization )
@@ -59,7 +59,6 @@ def getRest( url, session, payload, requestHeader, authorization, recordLimit, l
 		end = getTime()
 		time = end - start
 		#log.info('\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, url))
-
 	except:
 		output = {'items' : None}
 		r.status_code
@@ -75,7 +74,6 @@ def postRest( url, session, body, requestHeader, authorization, log ):
 	try:
 		r = session.post( url, json=body, headers=requestHeader, auth=authorization )
 		print ( r.status_code, r.text )
-
 		end = getTime()
 		time = end - start
 	except:
@@ -86,6 +84,21 @@ def postRest( url, session, body, requestHeader, authorization, log ):
 	
 	return time, r.status_code, r.text
 
+def patchRest( url, session, body, requestHeader, authorization, log ):
+	#log = setLogging()
+	start = getTime()
+	try:
+		r = session.patch( url, json=body, headers=requestHeader, auth=authorization )
+		print ( r.status_code, r.text )
+		end = getTime()
+		time = end - start
+	except:
+		r.status_code
+		end = getTime()
+		time = end - start
+		log.info('   **ERROR**')
+	
+	return time, r.status_code, r.text
 		
 def getResources( filename ):
 	resourceNames = []
@@ -105,16 +118,17 @@ def getPsPlanId ( psPlanOutput, log ):
 	log.info('--> Fetching Data for following Plans (PlanID): %s\n' % ( psPlans ) )
 	return psPlans
 	
-def idCode( output, entity, log ):
+def idCode( output, entity, keyLookup, log ):
 	objectIdCode = {}
 	entityId = entity + 'Id'
-	entityCode = entity + 'Code'
+	entityCode = entity + keyLookup
 	
 	for o in output['items']:
 		objectIdCode[o[entityCode]] = o[entityId]
 	log.info('\t\tCode to Id mapping for\t %s : %s mapping\n' % ( entityCode, entityId ) )
 	return objectIdCode
-
+	
+	
 def writeCsv ( list, filename, outDir ):
 	file = filename + '.csv'
 	csvFile = os.path.join( outDir, file)
@@ -165,5 +179,18 @@ def readExcel ( filename, object ) :
 		final.append(partFinal)
 	
 	return final
+	
+def parseUrl ( url ):
+	parsed = urlsplit(url).path.split('/')[-1]
+	
+	return parsed
+	
+def getKey ( links ):
+	''' For attribute processing, get the system generated key'''
+	for link in links:
+		if ( link['rel'] == 'self' ):
+			key = parseUrl(link['href'])
+	
+	return key
 
 	

@@ -3,11 +3,7 @@ from psRestUtilities import *
 
 def getData ( recordLimit ):
 	
-	querystring = { 
-					"limit": recordLimit 
-					}
-	
-	psPlanOutput, t, status = getRest( psPlanUrl, session, payload, requestHeader, authorization, querystring, log )
+	psPlanOutput, t, status = getRest( psPlanUrl, session, payload, requestHeader, authorization, recordLimit, log )
 
 	psPlanIdList = getPsPlanId( psPlanOutput, log )	
 
@@ -22,7 +18,7 @@ def getData ( recordLimit ):
 		for r in resources:
 			toUrl = getUrl ( url, rootResource, str( plan ), 'child', r )
 			#print ( toUrl )
-			restOutput, t, status = getRest ( toUrl, session, payload, requestHeader, authorization, querystring, log )
+			restOutput, t, status = getRest ( toUrl, session, payload, requestHeader, authorization, recordLimit, log )
 			filename = str( plan ) + '.' + r
 			if restOutput[ 'items' ]:
 				log.info('\t\tStatusCode: %s\t%5s Records \t%s sec \t%s' % (status, ( len( restOutput[ 'items' ] )), t, r))
