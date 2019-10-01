@@ -7,6 +7,7 @@ import urllib.parse
 import csv
 import logging
 from openpyxl import load_workbook
+import xlrd
 from urllib.parse import urlsplit
 
 
@@ -161,7 +162,8 @@ def scmAuth ( user, password ):
 	payload = ''
 	
 	return r, r.auth, r.headers, payload
-	
+
+'''
 def readExcel ( filename, object ) :
 	wb = load_workbook( filename )
 	sheet = wb[ object ]
@@ -171,7 +173,7 @@ def readExcel ( filename, object ) :
 	for x in range(1, sheet.max_row ):
 		partFinal = {}	
 		for y in range (0, sheet.max_column):
-			'''  If date, Change from datetime to ISO date format '''
+			# If date, Change from datetime to ISO date format
 			if isinstance(res[x][y].value, datetime.datetime):
 				partFinal[res[0][y].value] = res[x][y].value.replace(tzinfo=datetime.timezone.utc).isoformat()
 			else:
@@ -179,7 +181,8 @@ def readExcel ( filename, object ) :
 		final.append(partFinal)
 	
 	return final
-	
+'''
+
 def parseUrl ( url ):
 	parsed = urlsplit(url).path.split('/')[-1]
 	
@@ -192,5 +195,38 @@ def getKey ( links ):
 			key = parseUrl(link['href'])
 	
 	return key
+
+def getExcelData ( filename, object ):
+	wb = xlrd.open_workbook( filename, formatting_info=True )
+	ws = wb.sheet_by_name( object )
+	
+	col_keys = [ ws.cell(0, col_index).value for col_index in range(ws.ncols) ]	
+	excelDictList = []
+	
+	for row_index in range(1, ws.nrows):
+		#d = { col_keys[col_index]: ws.cell(row_index, col_index).value for col_index in range(ws.ncols) }   
+		## non-list comprehension version of above
+		d={}
+		for col_index in range(ws.ncols):
+			if ws.cell(row_index, col_index).ctype == 3:
+				isoDate = datetime.datetime(*xlrd.xldate_as_tuple(ws.cell(row_index, col_index).value, wb.datemode)).replace(tzinfo=datetime.timezone.utc).isoformat()
+				d[ col_keys[col_index] ] = isoDate
+			elif (ws.cell(row_index, col_index).ctype == 0) and col_keys[col_index]  != 'Color':
+				d[ col_keys[col_index] ] = None
+			elif col_keys[col_index] == 'Color':
+				xfx = ws.cell_xf_index(row_index, col_index)
+				xf = wb.xf_list[xfx]
+				bgx = xf.background.pattern_colour_index
+				pattern_colour = wb.colour_map[bgx]
+				hexColour = ('#%02x%02x%02x' % pattern_colour)
+				#print (pattern_colour)
+				
+				d[ col_keys[col_index] ] = hexColour
+			else:
+				d[ col_keys[col_index] ] = ws.cell(row_index, col_index).value
+				
+		excelDictList.append(d)
+
+	return excelDictList
 
 	
