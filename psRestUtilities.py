@@ -9,6 +9,7 @@ import logging
 from openpyxl import load_workbook
 
 
+
 def getTime():
 	currentTime = datetime.datetime.now()
 	return currentTime
@@ -42,13 +43,14 @@ def setLogging():
 	logger.addHandler(ch)
 	return logger
 		
+
 def getRest( url, session, payload, requestHeader, authorization, recordLimit, log ):
 	#log = setLogging()
 	payload = ''
 	querystring = { 
 					"limit": recordLimit 
 					}
-	
+
 	start = getTime()
 	try:
 		r = session.get( url, data=payload, headers=requestHeader, params=querystring, auth=authorization )
@@ -57,6 +59,7 @@ def getRest( url, session, payload, requestHeader, authorization, recordLimit, l
 		end = getTime()
 		time = end - start
 		#log.info('\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, url))
+
 	except:
 		output = {'items' : None}
 		r.status_code
@@ -72,6 +75,7 @@ def postRest( url, session, body, requestHeader, authorization, log ):
 	try:
 		r = session.post( url, json=body, headers=requestHeader, auth=authorization )
 		print ( r.status_code, r.text )
+
 		end = getTime()
 		time = end - start
 	except:
@@ -110,8 +114,7 @@ def idCode( output, entity, log ):
 		objectIdCode[o[entityCode]] = o[entityId]
 	log.info('\t\tCode to Id mapping for\t %s : %s mapping\n' % ( entityCode, entityId ) )
 	return objectIdCode
-	
-	
+
 def writeCsv ( list, filename, outDir ):
 	file = filename + '.csv'
 	csvFile = os.path.join( outDir, file)
@@ -162,4 +165,5 @@ def readExcel ( filename, object ) :
 		final.append(partFinal)
 	
 	return final
+
 	

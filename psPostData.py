@@ -1,4 +1,5 @@
 import sys, os
+
 import json
 from psRestUtilities import *
 
@@ -9,7 +10,6 @@ def postData ( objectList, url ):
 		#jsonData = json.dumps(object)
 		t, status, statusText = postRest( url, session, object, requestHeader, authorization, log )
 		log.info('\tPOST StatusCode: %s\t Time: \t%s sec \t%s' % ( status, t, t ) )
-	
 
 if __name__ == "__main__":
 	
@@ -90,5 +90,5 @@ if __name__ == "__main__":
 						
 		#print ( psOrgAttr )
 		
-	
+
 	
