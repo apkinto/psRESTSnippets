@@ -6,6 +6,8 @@ import sys, os
 import urllib.parse
 import csv
 import logging
+from openpyxl import load_workbook
+
 
 
 def getTime():
@@ -41,9 +43,14 @@ def setLogging():
 	logger.addHandler(ch)
 	return logger
 		
-def getRest( url, session, payload, requestHeader, authorization, querystring, log ):
+
+def getRest( url, session, payload, requestHeader, authorization, recordLimit, log ):
 	#log = setLogging()
 	payload = ''
+	querystring = { 
+					"limit": recordLimit 
+					}
+
 	start = getTime()
 	try:
 		r = session.get( url, data=payload, headers=requestHeader, params=querystring, auth=authorization )
@@ -51,6 +58,8 @@ def getRest( url, session, payload, requestHeader, authorization, querystring, l
 		output = json.loads(data)
 		end = getTime()
 		time = end - start
+		#log.info('\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, url))
+
 	except:
 		output = {'items' : None}
 		r.status_code
@@ -65,7 +74,8 @@ def postRest( url, session, body, requestHeader, authorization, log ):
 	start = getTime()
 	try:
 		r = session.post( url, json=body, headers=requestHeader, auth=authorization )
-		#print ( r.status_code, r.text )
+		print ( r.status_code, r.text )
+
 		end = getTime()
 		time = end - start
 	except:
@@ -95,6 +105,16 @@ def getPsPlanId ( psPlanOutput, log ):
 	log.info('--> Fetching Data for following Plans (PlanID): %s\n' % ( psPlans ) )
 	return psPlans
 	
+def idCode( output, entity, log ):
+	objectIdCode = {}
+	entityId = entity + 'Id'
+	entityCode = entity + 'Code'
+	
+	for o in output['items']:
+		objectIdCode[o[entityCode]] = o[entityId]
+	log.info('\t\tCode to Id mapping for\t %s : %s mapping\n' % ( entityCode, entityId ) )
+	return objectIdCode
+
 def writeCsv ( list, filename, outDir ):
 	file = filename + '.csv'
 	csvFile = os.path.join( outDir, file)
@@ -123,8 +143,27 @@ def scmAuth ( user, password ):
 	r = requests.Session()
 	r.auth = ( user, password )
 	#r.headers = {'Content-type': 'application/json', 'REST-Framework-Version': '1'}
-	r.headers={	'Cache-Control': 'no-cache, no-store, must-revalidate','Content-Type': 'application/json', 'REST-Framework-Version': '1', 'Connection': 'close', 	 }
+	r.headers={	'Cache-Control': 'no-cache','Content-Type': 'application/json', 'REST-Framework-Version': '1', 'Connection': 'close', 	 }
 	payload = ''
 	
 	return r, r.auth, r.headers, payload
+	
+def readExcel ( filename, object ) :
+	wb = load_workbook( filename )
+	sheet = wb[ object ]
+	res = list( sheet )  				# list of records in excel sheet
+	final = []							# List of records as dictionary
+	
+	for x in range(1, sheet.max_row ):
+		partFinal = {}	
+		for y in range (0, sheet.max_column):
+			'''  If date, Change from datetime to ISO date format '''
+			if isinstance(res[x][y].value, datetime.datetime):
+				partFinal[res[0][y].value] = res[x][y].value.replace(tzinfo=datetime.timezone.utc).isoformat()
+			else:
+				partFinal[res[0][y].value] = res[x][y].value
+		final.append(partFinal)
+	
+	return final
+
 	
