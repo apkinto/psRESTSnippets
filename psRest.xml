@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <psConfiguration>
   <variableList>
-		<url>https://fuscdrmsmc204-fa-ext.us.oracle.com/fscmRestApi/resources/11.13.18.05/</url>
+		<url>https://fuscdrmsmc204-fa-ext.us.oracle.com/fscmRestApi/resources/11.13.18.05</url>
 		<user>SCMOPERATIONS</user>
 	<password>Welcome1</password>
      <psOutputDirectory>C:/Users/alkim.ORADEV/Documents/Python/rest/out</psOutputDirectory>
      <psInputDirectory>C:/Users/alkim.ORADEV/Documents/Python/rest</psInputDirectory>
 	<resourceList>resources.txt</resourceList>
 	<rootResource>productionSchedulingPlans</rootResource>
+   <psOrganizationsRoot>productionSchedulingOrganizations</psOrganizationsRoot>
 	<planId>50002</planId>
 	<recordLimit>100</recordLimit>
+	<excelFile>psData.xlsx</excelFile>
 
   </variableList>
 </psConfiguration>
