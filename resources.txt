@@ -3,7 +3,6 @@ schedulingResources
 resourceOperationSequences
 resourceChangeoverSequences
 resourceCalendars
-schedulingOptions
 attributes
 calendars
 calendarEvents
@@ -22,9 +21,9 @@ changeoverInstances
 resourceUsageLevels
 resourceUtilization
 workOrderRescheduleCommands
-kpiSummary
-kpiChangeoverTime
-kpiResourceUtilization
-kpiLateWorkOrders
-kpiLateDemands
+scheduleMeasures
+changeoverTimeMeasures
+resourceUtilizationMeasures
+lateWorkOrderMeasures
+lateDemandMeasures
 selectedItemCategories
