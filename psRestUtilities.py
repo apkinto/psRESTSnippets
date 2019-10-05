@@ -45,7 +45,7 @@ def setLogging():
 	logger.addHandler(ch)
 	return logger
 		
-def getRest( url, session, payload, requestHeader, authorization, recordLimit, log ):
+def getRest( url, session, payload, requestHeader, authorization, recordLimit, log, count ):
 	#log = setLogging()
 	payload = ''
 	querystring = { 
@@ -59,15 +59,17 @@ def getRest( url, session, payload, requestHeader, authorization, recordLimit, l
 		output = json.loads(data)
 		end = getTime()
 		time = end - start
+		count += 1
 		#log.info('\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, url))
 	except:
 		output = {'items' : None}
 		r.status_code
 		end = getTime()
 		time = end - start
+		count += 1
 		log.info('   **ERROR**')
 	
-	return output, time, r.status_code
+	return output, time, r.status_code, count
 
 def postRest( url, session, body, requestHeader, authorization, log ):
 	#log = setLogging()
@@ -85,7 +87,7 @@ def postRest( url, session, body, requestHeader, authorization, log ):
 	
 	return time, r.status_code, r.text
 
-def patchRest( url, session, body, requestHeader, authorization, log ):
+def patchRest( url, session, body, requestHeader, authorization, log, count ):
 	#log = setLogging()
 	start = getTime()
 	try:
@@ -93,13 +95,15 @@ def patchRest( url, session, body, requestHeader, authorization, log ):
 		print ( r.status_code, r.text )
 		end = getTime()
 		time = end - start
+		count += 1
 	except:
 		r.status_code
 		end = getTime()
 		time = end - start
+		count += 1
 		log.info('   **ERROR**')
 	
-	return time, r.status_code, r.text
+	return time, r.status_code, r.text, count
 		
 def getResources( filename ):
 	resourceNames = []
@@ -119,14 +123,12 @@ def getPsPlanId ( psPlanOutput, log ):
 	log.info('--> Fetching Data for following Plans (PlanID): %s\n' % ( psPlans ) )
 	return psPlans
 	
-def idCode( output, entity, keyLookup, log ):
+def idCode( output, entityKey, entityId, log ):
 	objectIdCode = {}
-	entityId = entity + 'Id'
-	entityCode = entity + keyLookup
 	
 	for o in output['items']:
-		objectIdCode[o[entityCode]] = o[entityId]
-	log.info('\t\tCode to Id mapping for\t %s : %s mapping\n' % ( entityCode, entityId ) )
+		objectIdCode[ o[entityKey] ] = o[ entityId ]
+	log.info('\t\tCode to Id mapping for\t %s : %s mapping\n' % ( entityKey, entityId ) )
 	return objectIdCode
 	
 	
@@ -208,19 +210,19 @@ def getExcelData ( filename, object ):
 		## non-list comprehension version of above
 		d={}
 		for col_index in range(ws.ncols):
+			''' If date - ctype=3 '''
 			if ws.cell(row_index, col_index).ctype == 3:
 				isoDate = datetime.datetime(*xlrd.xldate_as_tuple(ws.cell(row_index, col_index).value, wb.datemode)).replace(tzinfo=datetime.timezone.utc).isoformat()
 				d[ col_keys[col_index] ] = isoDate
 			elif (ws.cell(row_index, col_index).ctype == 0) and col_keys[col_index]  != 'Color':
 				d[ col_keys[col_index] ] = None
 			elif col_keys[col_index] == 'Color':
+				''' Get Hex color values for the column with title Color '''
 				xfx = ws.cell_xf_index(row_index, col_index)
 				xf = wb.xf_list[xfx]
 				bgx = xf.background.pattern_colour_index
 				pattern_colour = wb.colour_map[bgx]
 				hexColour = ('#%02x%02x%02x' % pattern_colour)
-				#print (pattern_colour)
-				
 				d[ col_keys[col_index] ] = hexColour
 			else:
 				d[ col_keys[col_index] ] = ws.cell(row_index, col_index).value
