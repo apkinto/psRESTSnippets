@@ -53,6 +53,8 @@ def getRest( url, session, payload, requestHeader, authorization, recordLimit, l
 					}
 	
 	start = getTime()
+	urlObject = parseUrl(url)
+	
 	try:
 		r = session.get( url, data=payload, headers=requestHeader, params=querystring, auth=authorization )
 		data = r.content
@@ -60,48 +62,54 @@ def getRest( url, session, payload, requestHeader, authorization, recordLimit, l
 		end = getTime()
 		time = end - start
 		count += 1
-		#log.info('\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, url))
+		log.info('\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
 	except:
 		output = {'items' : None}
 		r.status_code
 		end = getTime()
 		time = end - start
-		count += 1
-		log.info('   **ERROR**')
+		log.info('\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
 	
 	return output, time, r.status_code, count
 
-def postRest( url, session, body, requestHeader, authorization, log ):
+def postRest( url, session, body, requestHeader, authorization, log, count ):
 	#log = setLogging()
 	start = getTime()
+	urlObject = parseUrl(url)
+		
 	try:
 		r = session.post( url, json=body, headers=requestHeader, auth=authorization )
-		print ( r.status_code, r.text )
+		#print ( r.status_code, r.text )
 		end = getTime()
 		time = end - start
+		log.info('\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
+		count += 1
 	except:
 		r.status_code
 		end = getTime()
 		time = end - start
-		log.info('   **ERROR**')
+		log.info('\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
 	
-	return time, r.status_code, r.text
+	return time, r.status_code, r.text, count
 
 def patchRest( url, session, body, requestHeader, authorization, log, count ):
 	#log = setLogging()
 	start = getTime()
+	urlObject = parseUrl(url)
+	
 	try:
 		r = session.patch( url, json=body, headers=requestHeader, auth=authorization )
-		print ( r.status_code, r.text )
+		#print ( r.status_code, r.text )
 		end = getTime()
 		time = end - start
 		count += 1
+		log.info('\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
 	except:
 		r.status_code
 		end = getTime()
 		time = end - start
 		count += 1
-		log.info('   **ERROR**')
+		log.info('\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
 	
 	return time, r.status_code, r.text, count
 		
@@ -113,22 +121,24 @@ def getResources( filename ):
 	return resourceNames
 
 def getPsPlanId ( psPlanOutput, log ):
+	log.info('\tGetting List of Plans')
 	psPlans = []
 	for p in psPlanOutput['items']:
 		psPlans.append( { 
 							'PlanId' : p['PlanId'],
-							'PlaName': p['PlanName'] 
+							'PlanName': p['PlanName'] 
 						} 
 						)
-	log.info('--> Fetching Data for following Plans (PlanID): %s\n' % ( psPlans ) )
+	log.info('\t\t--> Existing Plans: %s' % ( [dict['PlanName'] for dict in psPlans] ) )
 	return psPlans
 	
 def idCode( output, entityKey, entityId, log ):
+	log.info('\tCreating %s %s Cross reference' % (entityKey, entityId))
 	objectIdCode = {}
 	
 	for o in output['items']:
 		objectIdCode[ o[entityKey] ] = o[ entityId ]
-	log.info('\t\tCode to Id mapping for\t %s : %s mapping\n' % ( entityKey, entityId ) )
+	log.info('\t\t-->Code to Id mapping for\t %s : %s mapping' % ( entityKey, entityId ) )
 	return objectIdCode
 	
 	
