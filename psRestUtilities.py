@@ -62,13 +62,13 @@ def getRest( url, session, payload, requestHeader, authorization, recordLimit, l
 		end = getTime()
 		time = end - start
 		count += 1
-		log.info('\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
+		log.info('\t\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
 	except:
 		output = {'items' : None}
 		r.status_code
 		end = getTime()
 		time = end - start
-		log.info('\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
+		log.info('\t\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
 	
 	return output, time, r.status_code, count
 
@@ -82,13 +82,13 @@ def postRest( url, session, body, requestHeader, authorization, log, count ):
 		#print ( r.status_code, r.text )
 		end = getTime()
 		time = end - start
-		log.info('\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
+		log.info('\t\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
 		count += 1
 	except:
 		r.status_code
 		end = getTime()
 		time = end - start
-		log.info('\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
+		log.info('\t\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
 	
 	return time, r.status_code, r.text, count
 
@@ -103,13 +103,13 @@ def patchRest( url, session, body, requestHeader, authorization, log, count ):
 		end = getTime()
 		time = end - start
 		count += 1
-		log.info('\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
+		log.info('\t\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
 	except:
 		r.status_code
 		end = getTime()
 		time = end - start
 		count += 1
-		log.info('\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
+		log.info('\t\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
 	
 	return time, r.status_code, r.text, count
 		
@@ -133,7 +133,7 @@ def getPsPlanId ( psPlanOutput, log ):
 	return psPlans
 	
 def idCode( output, entityKey, entityId, log ):
-	log.info('\tCreating %s %s Cross reference' % (entityKey, entityId))
+	#log.info('\t\t %s %s Cross reference' % (entityKey, entityId))
 	objectIdCode = {}
 	
 	for o in output['items']:
