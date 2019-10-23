@@ -2,11 +2,14 @@ import sys, os
 import json
 import urllib.parse
 from psRestUtilities import *
+import datetime
+import time
+
 
 def postData ( objectList, url ):
 	for object in objectList:
 		t, status, statusText = postRest( url, session, object, requestHeader, authorization, log )
-		log.info('\t\t\tStatusCode: %s\t Time: \t%s sec \t%s' % ( status, t, t ) )
+		log.info('\t\t\tStatusCode: %s\t TotalTime: \t%s sec \t%s' % ( status, t, t ) )
 		
 def createPlans ( psPlanUrl, restCount ):
 	plans = getExcelData( excelFile, 'Plans' )
@@ -71,26 +74,17 @@ def updateAttribute( restCount ):
 		t, status, statusText, restCount = patchRest( postAttrValueUrl, session, attrColor, requestHeader, authorization, log, restCount )
 
 	end = getTime()
-	time = end - start
-	log.info('\t\tUpdated Attribute Colors %s REST calls in %s\tsec' % (restCount, time))
+	TotalTime = end - start
+	log.info('\t\tUpdated Attribute Colors %s REST calls in %s\tsec' % (restCount, TotalTime))
 
-def createChangeovers( restCount ):
+def createChangeoversBatch( restCount ):
 	log.info('\tCreating Changeovers')
 	start = getTime()
 	changeOvers = getExcelData( excelFile, 'Changeovers' )
-	#print (changeOvers)
 	workCenters = set( dict['WorkCenterCode'] for dict in changeOvers )
 	resources = set( dict['Resource'] for dict in changeOvers )
 	segmentCodes = set( (dict['OrganizationCode'], dict['SegmentCode']) for dict in changeOvers )
 	uniqueOrgs = set( dict['OrganizationCode'] for dict in changeOvers )
-	
-	'''
-	uniqueFromAttr = set( (dict['SegmentCode'], dict['FromAttributeValueCode']) for dict in changeOvers )
-	uniqueToAttr = set( (dict['SegmentCode'], dict['ToAttributeValueCode']) for dict in changeOvers )
-	#Get a unique set of From/To attribute values
-	uniqueAttrVal = uniqueFromAttr.copy()
-	uniqueAttrVal.update(uniqueToAttr)
-	'''
 	wcUrl = getUrl ( url, 'workCenters' ) 
 	mfgWorkCenters, t, status, restCount = getRest ( wcUrl, session, payload, requestHeader, authorization, recordLimit, log, restCount )
 	#Assumes work center ID is the same across orgs, if not need to add org as key
@@ -107,44 +101,37 @@ def createChangeovers( restCount ):
 	segmentXref = segmentXreference( uniqueOrgs, segmentCodes, restCount )
 	attrValXref = attributeValXreference( segmentCodes, segmentXref, restCount ) 
 	
-	#The following is to get the Max ChangeoverId and MaxCOSequence Number...need change REST so coId is not requried on POST.  Also, consider making seq num as an input in the spreadsheet instead of just incrementing by max+100
-	coId = []
-	coSeq = []
-	for org in uniqueOrgs:
-		postCOUrl = getUrl( psOrgUrl, str(orgXref[org]), 'child/changeoverRules' )
-		currentCo, t, status, restCount = getRest( postCOUrl, session, payload, requestHeader, authorization, recordLimit, log, restCount)
-		for c in (currentCo['items']):
-			coId.append( c['ChangeoverId'] )
-			coSeq.append( c['ChangeoverSequenceNumber'] )
+	changeoverId = int(time.mktime(datetime.datetime.now().timetuple())*100000)
+	changeoverSeq = changeoverId
 	
-	changeoverId = max(coId) + 1
-	changeoverSeq = max(coSeq) + 100
-
+	partsList = []
 	for co in changeOvers:
-		changeOverBody ={}
-		changeOverBody['OrganizationId'] = orgXref[ co['OrganizationCode' ] ]
-		changeOverBody['ChangeoverId'] = changeoverId
-		#changeOverBody['ChangeoverSequenceNumber'] = co['ChangeoverSequenceNumber' ]
-		changeOverBody['ChangeoverSequenceNumber'] = changeoverSeq
-		changeOverBody['WorkCenterId'] = wcXref[ co['WorkCenterCode'] ]
-		changeOverBody['ResourceId'] = resourceXref[ co['Resource'] ]
-		changeOverBody['AttributeId'] = segmentXref[ co['SegmentCode'] ][0]
-		changeOverBody['FromAttributeValueId'] = attrValXref[ (co['OrganizationCode' ], co['SegmentCode'], co['FromAttributeValueCode']) ][0]
-		changeOverBody['ToAttributeValueId'] = attrValXref[ (co['OrganizationCode' ], co['SegmentCode'],co['ToAttributeValueCode']) ][0]
-		changeOverBody['Duration'] = co['Duration']
-		changeOverBody['DurationUnit'] = co['DurationUnit']
-		changeOverBody['Cost'] = 1
+		parts = {}
+		coPayload ={}
+		coPayload['OrganizationId'] = orgXref[ co['OrganizationCode' ] ]
+		coPayload['ChangeoverId'] = changeoverId
+		#coPayload['ChangeoverSequenceNumber'] = co['ChangeoverSequenceNumber' ]
+		coPayload['ChangeoverSequenceNumber'] = changeoverSeq
+		coPayload['WorkCenterId'] = wcXref[ co['WorkCenterCode'] ]
+		coPayload['ResourceId'] = resourceXref[ co['Resource'] ]
+		coPayload['AttributeId'] = segmentXref[ co['SegmentCode'] ][0]
+		coPayload['FromAttributeValueId'] = attrValXref[ (co['OrganizationCode' ], co['SegmentCode'], co['FromAttributeValueCode']) ][0]
+		coPayload['ToAttributeValueId'] = attrValXref[ (co['OrganizationCode' ], co['SegmentCode'],co['ToAttributeValueCode']) ][0]
+		coPayload['Duration'] = co['Duration']
+		coPayload['DurationUnit'] = co['DurationUnit']
+		coPayload['Cost'] = 1
+		parts = getParts(changeoverId, getUrl('/productionSchedulingOrganizations', str(orgXref[co['OrganizationCode']]), 'child/changeoverRules'), 'create', coPayload)
+		partsList.append(parts)
 		changeoverId += 1
-		changeoverSeq += 100
-		log.info('\t\tCreating Changeover Record')
-		postCOUrl = getUrl( psOrgUrl, str(orgXref[ co['OrganizationCode']]), 'child/changeoverRules' )
-		t, status, statusText, restCount = postRest( postCOUrl, session, changeOverBody, requestHeader, authorization, log, restCount )
-		log.info('\t\t-->%s' % (status))
-	
+		changeoverSeq += 1
+		
+	log.info('\t\tCreating %s Changeover Records in batches of %s' % (len(partsList), batchChunks))
+	t, status, statusText, restCount = postBatchRest( url, session, partsList, int(batchChunks), authorization, log, restCount )
 	end = getTime()
-	time = end - start
-	log.info('\t\tChangeovers:: %s REST calls in %s\tsec' % (restCount, time))
-						
+	TotalTime = end - start
+	log.info('\t\tChangeovers:: %s REST calls in %s\tsec' % (restCount, TotalTime))
+
+
 if __name__ == "__main__":
 	
 	'''	Set Variables, logging, and establish Session 	'''
@@ -152,6 +139,7 @@ if __name__ == "__main__":
 	variables = setVariables('psRest.xml')
 	for key,val in variables.items():
 		exec(key + '=val')	
+
 	session, authorization, requestHeader, payload = scmAuth ( user, password )
 	
 	log.info('REST Server: %s' % ( url ))
@@ -164,5 +152,6 @@ if __name__ == "__main__":
 	orgXref = idCode ( psOrganizations, 'OrganizationCode', 'OrganizationId', log )
 	
 	#createPlans( psPlanUrl, restCount) 
-	updateAttribute( restCount )
-	createChangeovers( restCount )
+	#updateAttribute( restCount )
+	#createChangeovers( restCount )
+	createChangeoversBatch( restCount )
