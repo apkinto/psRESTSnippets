@@ -59,15 +59,14 @@ def getRest( url, session, payload, requestHeader, authorization, recordLimit, l
 		r = session.get( url, data=payload, headers=requestHeader, params=querystring, auth=authorization )
 		data = r.content
 		output = json.loads(data)
-		end = getTime()
-		time = end - start
+		
+		time = getTime() - start
 		count += 1
 		log.info('\t\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
 	except:
 		output = {'items' : None}
 		r.status_code
-		end = getTime()
-		time = end - start
+		time = getTime() - start
 		log.info('\t\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
 	
 	return output, time, r.status_code, count
@@ -80,18 +79,40 @@ def postRest( url, session, body, requestHeader, authorization, log, count ):
 	try:
 		r = session.post( url, json=body, headers=requestHeader, auth=authorization )
 		#print ( r.status_code, r.text )
-		end = getTime()
-		time = end - start
+		
+		time = getTime() - start
 		log.info('\t\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
 		count += 1
 	except:
 		r.status_code
-		end = getTime()
-		time = end - start
+		time = getTime() - start
 		log.info('\t\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
 	
 	return time, r.status_code, r.text, count
 
+def postBatchRest( url, session, partsList, n, authorization, log, count ):
+	#log = setLogging()
+	start = getTime()
+	batchHeader={'Cache-Control': 'no-cache','Content-Type': 'application/vnd.oracle.adf.batch+json', 'REST-Framework-Version': '1', 'Connection': 'close'}
+	urlObject = parseUrl(url)
+	
+	chunksList = [partsList[i * n:(i + 1) * n] for i in range((len(partsList) + n - 1) // n )] 
+
+	for c in chunksList:
+		partsBody = {}
+		partsBody['parts'] = c
+		try:
+			r = session.post( url, json=partsBody, headers=batchHeader, auth=authorization )
+			time = getTime() - start
+			log.info('\t\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
+			count += 1
+		except:
+			r.status_code
+			time = getTime() - start
+			log.info('\t\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
+	
+	return time, r.status_code, r.text, count
+	
 def patchRest( url, session, body, requestHeader, authorization, log, count ):
 	#log = setLogging()
 	start = getTime()
@@ -99,15 +120,12 @@ def patchRest( url, session, body, requestHeader, authorization, log, count ):
 	
 	try:
 		r = session.patch( url, json=body, headers=requestHeader, auth=authorization )
-		#print ( r.status_code, r.text )
-		end = getTime()
-		time = end - start
+		time = getTime() - start
 		count += 1
 		log.info('\t\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
 	except:
 		r.status_code
-		end = getTime()
-		time = end - start
+		time = getTime() - start
 		count += 1
 		log.info('\t\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
 	
@@ -169,7 +187,6 @@ def getJsonItems ( jsonOutput ):
 def scmAuth ( user, password ):
 	r = requests.Session()
 	r.auth = ( user, password )
-	#r.headers = {'Content-type': 'application/json', 'REST-Framework-Version': '1'}
 	r.headers={	'Cache-Control': 'no-cache','Content-Type': 'application/json', 'REST-Framework-Version': '1', 'Connection': 'close', 	 }
 	payload = ''
 	
@@ -241,4 +258,12 @@ def getExcelData ( filename, object ):
 
 	return excelDictList
 
+def getParts( id, path, operation, payload):
+	''' Get Objects for Batch REST call '''
+	parts = {}
+	parts['id'] = id
+	parts['path'] = path
+	parts['operation'] = operation
+	parts['payload'] = payload
 	
+	return parts

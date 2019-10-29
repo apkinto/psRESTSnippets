@@ -2,16 +2,17 @@
 <psConfiguration>
   <variableList>
 		<url>https://fuscdrmsmc204-fa-ext.us.oracle.com/fscmRestApi/resources/11.13.18.05</url>
-		<user>SCMOPERATIONS</user>
+		<user>APS_ALL</user>
 	<password>Welcome1</password>
      <psOutputDirectory>C:/Users/alkim.ORADEV/Documents/Python/rest/out</psOutputDirectory>
      <psInputDirectory>C:/Users/alkim.ORADEV/Documents/Python/rest</psInputDirectory>
 	<resourceList>resources.txt</resourceList>
+	<batchChunks>500</batchChunks>
 	<rootResource>productionSchedulingPlans</rootResource>
    <psOrganizationsRoot>productionSchedulingOrganizations</psOrganizationsRoot>
 	<planId>50002</planId>
-	<recordLimit>100</recordLimit>
-	<excelFile>psData.xlsx</excelFile>
+	<recordLimit>5000</recordLimit>
+	<excelFile>psData.xls</excelFile>
 
   </variableList>
 </psConfiguration>
