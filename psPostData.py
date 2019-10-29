@@ -52,7 +52,7 @@ def attributeValXreference ( segCodes, segXref, restCount ):
 	
 	return attributeValueXref
 	
-def updateAttribute( restCount ):
+def updateAttributeBatch( restCount ):
 	log.info('\tUpdating AttributeValue Colors')
 	start = getTime()
 	attributeValues = getExcelData( excelFile, 'AttributeValue' )
@@ -61,20 +61,23 @@ def updateAttribute( restCount ):
 	
 	segmentXref = segmentXreference( uniqueOrgs, segmentCodes, restCount )
 	attrValXref = attributeValXreference( segmentCodes, segmentXref, restCount )  
-
+	
+	partsList = []
 	for av in attributeValues:
-		log.info('\t\t-->Updating Attribute Colors for %s: %s' % (av['SegmentCode'], av['AttributeValueCode']))
+		log.info('\t\t-->Getting Attribute Colors for %s: %s' % (av['SegmentCode'], av['AttributeValueCode']))
 		attrColor={}
 		attrColor['OrganizationId'] = orgXref[ av['OrganizationCode'] ]
 		attrColor['AttributeId'] = segmentXref[ av['SegmentCode'] ][0]
 		attrColor['AttributeValueId'] = attrValXref [ (av['OrganizationCode'], av['SegmentCode'], av['AttributeValueCode']) ][0]
 		attrColor['Color'] = av['Color']
 		attrValKey = attrValXref [ (av['OrganizationCode'], av['SegmentCode'], av['AttributeValueCode']) ][1]
-		postAttrValueUrl = getUrl( psOrgUrl, str(orgXref[ av['OrganizationCode']]), 'child/attributes', segmentXref[av['SegmentCode']][1], 'child/attributeValues', attrValKey)
-		t, status, statusText, restCount = patchRest( postAttrValueUrl, session, attrColor, requestHeader, authorization, log, restCount )
+		postAttrValueUrl = getUrl( '',psOrganizationsRoot, str(orgXref[ av['OrganizationCode']]), 'child/attributes', segmentXref[av['SegmentCode']][1], 'child/attributeValues', attrValKey)
+		parts = getParts(str(attrValXref[(av['OrganizationCode'], av['SegmentCode'], av['AttributeValueCode'])][0]), getUrl( '',psOrganizationsRoot, str(orgXref[ av['OrganizationCode']]), 'child/attributes', segmentXref[av['SegmentCode']][1], 'child/attributeValues', attrValKey), 'update', attrColor)
+		partsList.append(parts)
 
-	end = getTime()
-	TotalTime = end - start
+	log.info('\t\tUpdating %s Attribute Color Records in batches of %s' % (len(partsList), batchChunks))
+	t, status, statusText, restCount = postBatchRest( url, session, partsList, int(batchChunks), authorization, log, restCount )
+	TotalTime = getTime() - start
 	log.info('\t\tUpdated Attribute Colors %s REST calls in %s\tsec' % (restCount, TotalTime))
 
 def createChangeoversBatch( restCount ):
@@ -127,10 +130,8 @@ def createChangeoversBatch( restCount ):
 		
 	log.info('\t\tCreating %s Changeover Records in batches of %s' % (len(partsList), batchChunks))
 	t, status, statusText, restCount = postBatchRest( url, session, partsList, int(batchChunks), authorization, log, restCount )
-	end = getTime()
-	TotalTime = end - start
+	TotalTime = getTime() - start
 	log.info('\t\tChangeovers:: %s REST calls in %s\tsec' % (restCount, TotalTime))
-
 
 if __name__ == "__main__":
 	
@@ -151,7 +152,7 @@ if __name__ == "__main__":
 	psOrganizations, t, status, restCount = getRest ( psOrgUrl, session, payload, requestHeader, authorization, recordLimit, log, restCount )
 	orgXref = idCode ( psOrganizations, 'OrganizationCode', 'OrganizationId', log )
 	
-	#createPlans( psPlanUrl, restCount) 
-	#updateAttribute( restCount )
-	#createChangeovers( restCount )
-	createChangeoversBatch( restCount )
+	createPlans( psPlanUrl, restCount) 
+	updateAttributeBatch( restCount )
+	createChangeoversBatch (restCount)
+
