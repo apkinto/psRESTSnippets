@@ -97,10 +97,12 @@ def postBatchRest( url, session, partsList, n, authorization, log, count ):
 	urlObject = parseUrl(url)
 	
 	chunksList = [partsList[i * n:(i + 1) * n] for i in range((len(partsList) + n - 1) // n )] 
+	print (chunksList)
 
 	for c in chunksList:
 		partsBody = {}
 		partsBody['parts'] = c
+		#print (partsBody)
 		try:
 			r = session.post( url, json=partsBody, headers=batchHeader, auth=authorization )
 			time = getTime() - start
