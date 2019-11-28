@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <psConfiguration>
     <variableList>
-        <url>https://fuscdrmsmc290-fa-ext.us.oracle.com/fscmRestApi/resources/11.13.18.05</url>
-        <user>SCMOPERATIONS</user>
-        <password>Welcome1</password>
+        <url>CLOUDHOST</url>
+        <user></user>
+        <password></password>
         <psOutputDirectory>C:/Users/alkim.ORADEV/Documents/Python/rest/out</psOutputDirectory>
         <psInputDirectory>C:/Users/alkim.ORADEV/Documents/Python/rest</psInputDirectory>
         <resourceList>resources.txt</resourceList>
