@@ -95,7 +95,7 @@ def createChangeoversBatch( restCount ):
 	mfgWorkCenters, t, status, statusText, restCount = getRest ( wcUrl, mfgsession, payload, None, mfgrequestHeader, mfgauthorization, recordLimit, log, restCount )
 	#Assumes work center ID is the same across orgs, if not need to add org as key
 	wcXref = idCode ( mfgWorkCenters, 'WorkCenterCode', 'WorkCenterId', log )
-	wcXref['RBPS_EXTRU_WC1'] = 300100209046811
+
 
 	resourceXref = {}
 	for wc in workCenters:
