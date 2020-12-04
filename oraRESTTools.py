@@ -17,9 +17,6 @@ def getTime():
 	return currentTime
 
 def setVariables( config ):
-	'''
-		Sets variables from psPythonConfig.xml.   Currently assumes it is in the PS bin directory.
-	'''
 	variable = {}
 	config = ET.parse(config)
 	root = config.getroot()
@@ -45,59 +42,66 @@ def setLogging():
 	logger.addHandler(ch)
 	return logger
 		
-def getRest( url, session, payload, requestHeader, authorization, recordLimit, log, count ):
+def getRest( url, session, payload, query, requestHeader, authorization, recordLimit, log, count, *argv ):
 	#log = setLogging()
 	payload = ''
+	
 	querystring = { 
 					"limit": recordLimit 
 					}
+	querystring['q'] = query
+	
 	
 	start = getTime()
 	urlObject = parseUrl(url)
 	
 	try:
 		r = session.get( url, data=payload, headers=requestHeader, params=querystring, auth=authorization )
+		#print ('***', r.status_code, r.text)
 		data = r.content
 		output = json.loads(data)
-		
 		time = getTime() - start
 		count += 1
-		log.info('\t\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
+		if argv:
+			log.info('\t%s\tStatusCode: %s\t%s sec\t%s' % (count, r.status_code, time, urlObject))
 	except:
 		output = {'items' : None}
 		r.status_code
 		time = getTime() - start
-		log.info('\t\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
+		log.info('\t%s\tStatusCode: %s\t**ERROR**%s' %(count, r.status_code, r.text, urlObject))
 	
-	return output, time, r.status_code, count
+	return output, time, r.status_code, r.text, count
 
-def postRest( url, session, body, requestHeader, authorization, log, count ):
+def postRest( url, session, body, requestHeader, authorization, log, count, *argv ):
 	#log = setLogging()
 	start = getTime()
 	urlObject = parseUrl(url)
+	#print ("*** MADE IT", url, body)
 		
 	try:
 		r = session.post( url, json=body, headers=requestHeader, auth=authorization )
-		#print ( r.status_code, r.text )
-		
+		#print ( 'XXX', r.status_code, r.text )
+		data = r.content
+		output = json.loads(data)
 		time = getTime() - start
-		log.info('\t\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
+		if argv:
+			log.info('\t\t%s StatusCode: %s\t%s sec\t%s' % (count, r.status_code, time, urlObject))
 		count += 1
 	except:
 		r.status_code
 		time = getTime() - start
-		log.info('\t\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
+		log.info('\t\t%s StatusCode: %s\t**ERROR**%s' %(count, r.status_code, r.text, urlObject))
 	
-	return time, r.status_code, r.text, count
+	return output, time, r.status_code, r.text, count
 
 def postBatchRest( url, session, partsList, n, authorization, log, count ):
 	#log = setLogging()
 	start = getTime()
-	batchHeader={'Cache-Control': 'no-cache','Content-Type': 'application/vnd.oracle.adf.batch+json', 'REST-Framework-Version': '1', 'Connection': 'close'}
+	batchHeader={'Cache-Control': 'no-cache','Content-Type': 'application/vnd.oracle.adf.batch+json', 'REST-Framework-Version': '1', 'Connection': 'close', 'REST-Framework-Version': "4"}
 	urlObject = parseUrl(url)
 	
 	chunksList = [partsList[i * n:(i + 1) * n] for i in range((len(partsList) + n - 1) // n )] 
-	print (chunksList)
+	#print (chunksList)
 
 	for c in chunksList:
 		partsBody = {}
@@ -106,12 +110,12 @@ def postBatchRest( url, session, partsList, n, authorization, log, count ):
 		try:
 			r = session.post( url, json=partsBody, headers=batchHeader, auth=authorization )
 			time = getTime() - start
-			log.info('\t\t\tStatusCode: %s\t%s sec\t%s' % (r.status_code, time, urlObject))
+			log.info('\t\tStatusCode: %s\t%s sec\t%s %s' % (r.status_code, time, urlObject, (count+1)*n))
 			count += 1
 		except:
 			r.status_code
 			time = getTime() - start
-			log.info('\t\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
+			log.info('\t\tStatusCode: %s\t**ERROR**%s' %(r.status_code, r.text, urlObject))
 	
 	return time, r.status_code, r.text, count
 	
@@ -141,16 +145,19 @@ def getResources( filename ):
 	return resourceNames
 
 def getPsPlanId ( psPlanOutput, log ):
-	log.info('\tGetting List of Plans')
+	log.info('\tCreating Plan, PlanId cross reference')
 	psPlans = []
+	psPlanXref = {}
 	for p in psPlanOutput['items']:
 		psPlans.append( { 
 							'PlanId' : p['PlanId'],
 							'PlanName': p['PlanName'] 
 						} 
 						)
-	log.info('\t\t--> Existing Plans: %s' % ( [dict['PlanName'] for dict in psPlans] ) )
-	return psPlans
+		psPlanXref[p['PlanName']] = p['PlanId']
+	#log.info('\t\t--> Existing Plans: %s' % ( [dict['PlanName'] for dict in psPlans] ) )
+	#log.info('\t\t--> Retrieved Existing Plans')
+	return psPlans, psPlanXref
 	
 def idCode( output, entityKey, entityId, log ):
 	#log.info('\t\t %s %s Cross reference' % (entityKey, entityId))
@@ -177,7 +184,8 @@ def writeCsv ( list, filename, outDir ):
 		f.close()
 
 def getUrl ( *n ):
-	newUrl = '/'.join( n )
+	params = [i for i in n if i]
+	newUrl = '/'.join( params)
 	
 	return newUrl
 	
@@ -189,7 +197,8 @@ def getJsonItems ( jsonOutput ):
 def scmAuth ( user, password ):
 	r = requests.Session()
 	r.auth = ( user, password )
-	r.headers={	'Cache-Control': 'no-cache','Content-Type': 'application/json', 'REST-Framework-Version': '1', 'Connection': 'close', 	 }
+	#r.headers={	'Cache-Control': 'no-cache','Content-Type': 'application/vnd.oracle.adf.action+json', 'REST-Framework-Version': '4', 'Connection': 'close'}
+	r.headers={	'Cache-Control': 'no-cache','Content-Type': 'application/json', 'REST-Framework-Version': '4', 'Connection': 'close'}
 	payload = ''
 	
 	return r, r.auth, r.headers, payload
@@ -269,3 +278,19 @@ def getParts( id, path, operation, payload):
 	parts['payload'] = payload
 	
 	return parts
+	
+def getPsBody(action, params):
+	body = {}
+	body['name'] = action
+	if params:
+		p = json.loads(params)
+		body['parameters'] = [p]
+
+	return body
+	
+def getEssJobId(output, jobIdField):
+	jobId = output[jobIdField]
+	
+	return jobId
+
+	
